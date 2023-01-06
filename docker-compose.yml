@@ -1,0 +1,64 @@
+version: "2.1"
+networks:
+  internal_network:
+services:
+#docker run -it -p 22022:20022 --name node --restart=always -v C:\Users\jiayq\docker\node:/node land007/node:latest
+  novnc-websockify:
+    restart: always
+    networks:
+      - internal_network
+    container_name: novnc-websockify
+    image: land007/novnc-websockify:latest
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./novnc-websockify:/node
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "300k"
+        max-file: "3"
+    environment:
+      - "VNC_SERVER=192.168.0.203:5901"
+    expose:
+      - "9000"
+#    ports:
+#      - "9000:9000"
+  node_http-proxy:
+    restart: always
+    networks:
+      - internal_network
+    links:
+      - node-wx
+    image: land007/http-proxy:latest
+    container_name: node_http-proxy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "300k"
+        max-file: "3"
+    environment:
+      - "password="
+      - "DOMAIN_NAME=docx.qhkly.com"
+      - "http_proxy_protocols=http:"
+      - "http_proxy_domains="
+      - "http_proxy_paths=/"
+      - "http_proxy_hosts=novnc-websockify"
+      - "http_proxy_ports=9000"
+      - "http_proxy_pretends=false"
+      - "ws_proxy_protocols=ws:"
+      - "ws_proxy_domains="
+      - "ws_proxy_paths=/"
+      - "ws_proxy_hosts=novnc-websockify"
+      - "ws_proxy_ports=9000"
+    expose:
+      - "20022"
+      - "443"
+      - "80"
+    ports:
+#      - "5052:20022"
+      - "20443:443"
+#      - "5051:80"
+#unset ${!DOCKER_*}
+#sudo docker-compose up -d --remove-orphans
+#sudo docker-compose down
