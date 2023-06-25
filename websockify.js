@@ -141,26 +141,33 @@ http_request = function (request, response) {
     if (! argv.web) {
         return http_error(response, 403, "403 Permission Denied");
     }
+	web_dir = path.resolve(argv.web);
+    var pathname = url.parse(request.url).pathname;
+    var pathfile = path.normalize(path.join(web_dir, pathname));
+    var root = path.normalize(web_dir + path.sep);
+    if ((pathfile + path.sep).substr(0, root.length) !== root) {
+    	console.error('malicious path "' + pathfile + '"');
+    	res.writeHead(403);
+    	res.end('malicious path "' + pathfile + '"\n');
+    	return;
+    }
 
-    var uri = url.parse(request.url).pathname
-        , filename = path.join(argv.web, uri);
-
-    fs.exists(filename, function(exists) {
+    fs.exists(pathfile, function(exists) {
         if(!exists) {
             return http_error(response, 404, "404 Not Found");
         }
 
-        if (fs.statSync(filename).isDirectory()) {
-            filename += '/index.html';
+        if (fs.statSync(pathfile).isDirectory()) {
+            pathfile += '/index.html';
         }
 
-        fs.readFile(filename, "binary", function(err, file) {
+        fs.readFile(pathfile, "binary", function(err, file) {
             if(err) {
                 return http_error(response, 500, err);
             }
 
             var headers = {};
-            var contentType = mime.contentType(path.extname(filename));
+            var contentType = mime.contentType(path.extname(pathfile));
             if (contentType !== false) {
               headers['Content-Type'] = contentType;
             }
